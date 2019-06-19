@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 from datetime import date
 from collections import defaultdict
-
+from todo_handler import TodoHandler
 
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
@@ -18,35 +18,51 @@ todocol = tododb["todotable"]
 app = Flask(__name__)
 
 
-taskList=[]
 # dict1={}
 dictReport = defaultdict(list)
-# dict1 = dict()
+todo_handler = TodoHandler()
 
 @app.route("/todo",methods = ["POST","GET","DELETE","PUT"])
-def insert():
+def GetCreateTodo():
     if request.method == 'POST':
-        taskDict={}
-        taskDict["created"] = request.form.get("createdAt")
-        taskDict["scheduled"] = request.form.get("scheduledAt")
-        taskDict["title"] = request.form.get("title")
-        taskDict["description"] = request.form.get("description")
-        taskDict["completed"] = request.form.get("completedAt")
-        taskDict["lastUpdated"] = request.form.get("lastUpdatedAt")
-        insertedResult = todocol.insert_one(taskDict)
-        print((insertedResult))
-        response = json.dumps({"success": "true", "status": 200, "result": "insertedResult"})
-        # print(type(response))
+        data = str(json.loads(request.data))
+        print(data)
+        output, status_code = todo_handler.create_todo(data)
+        if status_code == 200:
+            response = str(json.dumps({"success": "true", "status": status_code, "message": output}))
+        else:
+            response = str(json.dumps({"success": "false", "status": status_code, "message": output}))
         return response
+
+
+        # taskDict={}
+        # taskDict["created"] = request.form.get("createdAt")
+        # taskDict["scheduled"] = request.form.get("scheduledAt")
+        # taskDict["title"] = request.form.get("title")
+        # taskDict["description"] = request.form.get("description")
+        # taskDict["completed"] = request.form.get("completedAt")
+        # taskDict["lastUpdated"] = request.form.get("lastUpdatedAt")
+        # insertedResult = todocol.insert_one(taskDict)
+        # print((insertedResult))
+        # response = json.dumps({"success": "true", "status": 200, "result": "insertedResult"})
+        # # print(type(response))
+        # return response
     if request.method == 'GET':
-        collection = todocol
-        cursor = collection.find({})
+        taskList = []
+
+        output, status_code = todo_handler.get_todo()
+        if status_code == 200:
+            response = json.dumps({"success": "true", "status": status_code, "message": output})
+        else:
+            response = json.dumps({"success": "false", "status": status_code, "message": output})
+        return response
+
+
+        cursor = todocol.find({})
         for document in cursor:
             document['_id'] = str(document['_id'])
-            print(document)
-            print(type(document))
             taskList.append(document)
-        print(taskList)
+        # print(taskList)
         todojson = json.dumps(taskList)
         # json.encode(todojson, cls=JSONEncoder)
         return todojson
@@ -59,17 +75,13 @@ def insert():
         for document in cursor:
             print(document)
         return "Done"
-    # if request.method =='PUT':
-    #     todocol.update({"_id": ObjectId("5cc4a2f79c44bf613aeaea4b")}, {'set': {"new_field": 1}})
-    #     cursor = todocol.find({})
-    #     for document in cursor:
-    #         print(document)
-    #     return "Doneput"
 
 
-@app.route("/todoone",methods = ["POST","GET","DELETE","PUT"])
+
+@app.route("/todo/<id>",methods = ["POST","GET","DELETE","PUT"])
 def insert_one():
     if request.method=='GET':
+        # id=input("enter id")
         for i in todocol.find({"_id": ObjectId("5ccf0926a62b0a04224b15f9")}):
             print(i)
         return "YES"
