@@ -14,7 +14,7 @@ from todo_handler import TodoHandler
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 tododb = myclient['dbtodo']
-todocol = tododb["todotable"]
+todocol = tododb['todotable']
 app = Flask(__name__)
 
 
@@ -25,8 +25,8 @@ todo_handler = TodoHandler()
 @app.route("/todo",methods = ["POST","GET","DELETE","PUT"])
 def GetCreateTodo():
     if request.method == 'POST':
-        data = str(json.loads(request.data))
-        print(data)
+        data = json.loads(request.data.decode("utf-8"))
+        # print(data)
         output, status_code = todo_handler.create_todo(data)
         if status_code == 200:
             response = str(json.dumps({"success": "true", "status": status_code, "message": output}))
@@ -48,8 +48,6 @@ def GetCreateTodo():
         # # print(type(response))
         # return response
     if request.method == 'GET':
-        taskList = []
-
         output, status_code = todo_handler.get_todo()
         if status_code == 200:
             response = json.dumps({"success": "true", "status": status_code, "message": output})
@@ -58,39 +56,64 @@ def GetCreateTodo():
         return response
 
 
-        cursor = todocol.find({})
-        for document in cursor:
-            document['_id'] = str(document['_id'])
-            taskList.append(document)
-        # print(taskList)
-        todojson = json.dumps(taskList)
-        # json.encode(todojson, cls=JSONEncoder)
-        return todojson
+        # cursor = todocol.find({})
+        # for document in cursor:
+        #     document['_id'] = str(document['_id'])
+        #     taskList.append(document)
+        # # print(taskList)
+        # todojson = json.dumps(taskList)
+        # # json.encode(todojson, cls=JSONEncoder)
+        # return todojson
 
     if request.method=='DELETE':
-        # myquery = {"_id": ObjectId("4d512b45cc9374271b02ec4f")}
-        # todocol.delete_one(myquery)
-        todocol.delete_one({"_id": ObjectId("5ccfd2003cb13401deb7af62x")})
-        cursor = todocol.find({})
-        for document in cursor:
-            print(document)
-        return "Done"
+        output, status_code = todo_handler.delete_todo()
+        if status_code == 200:
+            response = json.dumps({"success": "true", "status": status_code, "message": output})
+        else:
+            response = json.dumps({"success": "false", "status": status_code, "message": output})
+        return response
+        # todocol.delete_many({})
+        # cursor = todocol.find({})
+        # for document in cursor:
+        #     print(document)
+        # return "DeleteAllDone"
 
 
 
-@app.route("/todo/<id>",methods = ["POST","GET","DELETE","PUT"])
+
+
+@app.route("/todo_one/<string:id>",methods = ["POST","GET","DELETE","PUT"])
 def insert_one():
     if request.method=='GET':
+        output, status_code = todo_handler.get_todo_one(id)
+        if status_code == 200:
+            response = json.dumps({"success": "true", "status": status_code, "message": output})
+        else:
+            response = json.dumps({"success": "false", "status": status_code, "message": output})
+        return response
         # id=input("enter id")
-        for i in todocol.find({"_id": ObjectId("5ccf0926a62b0a04224b15f9")}):
-            print(i)
-        return "YES"
+        # for i in todocol.find({"_id": ObjectId("5ccf0926a62b0a04224b15f9")}):
+        #     print(i)
+        # return "YES"
+
+
     if request.method=='DELETE':
-        todocol.delete_many({})
-        cursor = todocol.find({})
-        for document in cursor:
-            print(document)
-        return "DeleteAllDone"
+        data={"id": "5ccf0926a62b0a04224b15f9"}
+        output, status_code = todo_handler.delete_todo(data)
+        if status_code == 200:
+            response = json.dumps({"success": "true", "status": status_code, "message": output})
+        else:
+            response = json.dumps({"success": "false", "status": status_code, "message": output})
+        return response
+
+        # myquery = {"_id": ObjectId("4d512b45cc9374271b02ec4f")}
+        # todocol.delete_one(myquery)
+        # todocol.delete_one({"_id": ObjectId("5ccfd2003cb13401deb7af62x")})
+        # cursor = todocol.find({})
+        # for document in cursor:
+        #     print(document)
+        # return "Done"
+
     if request.method =='PUT':
         todocol.update({'title': 'Title4'}, {"$set": {"scheduled": "20/07/2019"}})
         cursor = todocol.find({})
@@ -105,7 +128,6 @@ def report():
     collection = todocol
     cursor = collection.find({})
     for document in cursor:
-        # print(document)
         completed=(document['completed'])
         scheduled=(document['scheduled'])
         if(completed!=""):
