@@ -1,6 +1,5 @@
 from json import JSONEncoder
 
-from bson import ObjectId
 from flask import Flask
 from flask import request, url_for, redirect
 from flask import render_template
@@ -10,13 +9,13 @@ from datetime import datetime
 from datetime import date
 from collections import defaultdict
 from todo_handler import TodoHandler
+from bson import ObjectId
 
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 tododb = myclient['dbtodo']
 todocol = tododb['todotable']
 app = Flask(__name__)
-
 
 # dict1={}
 dictReport = defaultdict(list)
@@ -25,8 +24,8 @@ todo_handler = TodoHandler()
 @app.route("/todo",methods = ["POST","GET","DELETE","PUT"])
 def GetCreateTodo():
     if request.method == 'POST':
-        data = json.loads(request.data.decode("utf-8"))
-        # print(data)
+        data = json.loads(request.data.decode('utf-8'))
+        print(data)
         output, status_code = todo_handler.create_todo(data)
         if status_code == 200:
             response = str(json.dumps({"success": "true", "status": status_code, "message": output}))
@@ -48,7 +47,8 @@ def GetCreateTodo():
         # # print(type(response))
         # return response
     if request.method == 'GET':
-        output, status_code = todo_handler.get_todo()
+        data = None
+        output, status_code = todo_handler.get_todo(data)
         if status_code == 200:
             response = json.dumps({"success": "true", "status": status_code, "message": output})
         else:
@@ -80,25 +80,26 @@ def GetCreateTodo():
 
 
 
-
-
 @app.route("/todo_one/<string:id>",methods = ["POST","GET","DELETE","PUT"])
-def insert_one():
+def method(id):
     if request.method=='GET':
-        output, status_code = todo_handler.get_todo_one(id)
+        data = {"id": id}
+        output, status_code = todo_handler.get_todo(data)
         if status_code == 200:
             response = json.dumps({"success": "true", "status": status_code, "message": output})
         else:
             response = json.dumps({"success": "false", "status": status_code, "message": output})
-        return response
+
         # id=input("enter id")
-        # for i in todocol.find({"_id": ObjectId("5ccf0926a62b0a04224b15f9")}):
+        # for i in todocol.find({"_id": ObjectId(id)}):
         #     print(i)
         # return "YES"
+        print(output)
+        return response
 
 
     if request.method=='DELETE':
-        data={"id": "5ccf0926a62b0a04224b15f9"}
+        data = {"id": id}           
         output, status_code = todo_handler.delete_todo(data)
         if status_code == 200:
             response = json.dumps({"success": "true", "status": status_code, "message": output})
@@ -110,12 +111,15 @@ def insert_one():
         # todocol.delete_one(myquery)
         # todocol.delete_one({"_id": ObjectId("5ccfd2003cb13401deb7af62x")})
         # cursor = todocol.find({})
-        # for document in cursor:
+        # for document in cursor:k
         #     print(document)
         # return "Done"
-
     if request.method =='PUT':
-        todocol.update({'title': 'Title4'}, {"$set": {"scheduled": "20/07/2019"}})
+        data = json.loads(request.data.decode('utf-8'))
+        todocol.update({'_id': ObjectId(id)}, {"$set": {"created":data["created"],
+                                                        "title":data["title"],
+                                                        "scheduled": data["scheduled"],
+                                                        "completed":data["completed"]}})
         cursor = todocol.find({})
         for document in cursor:
             print(document)

@@ -3,6 +3,7 @@ import os
 from flask import Flask
 from flask import request
 import shutil
+import requests
 
 
 app = Flask(__name__)
@@ -17,7 +18,14 @@ def youtube():
         # source = os.getcwd()
         # destination = '/home/shibani/Downloads/rough'
         # os.rename(source, destination)
-        ydl.download([url])
+        # p= ydl.download([url])
+        # print(p)
+        r = requests.get(url)
+        print(r)
+        # with open('/home/shibani/Downloads/rough', 'wb') as f:
+        #     ydl.download([url])
+        #     f.write(r.content)
+
     return "youtubeDone"
 
 # cwd = os.getcwd()
