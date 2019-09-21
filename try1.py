@@ -12,6 +12,8 @@ from collections import defaultdict
 from todo_handler import TodoHandler
 from bson import ObjectId
 from flask_restplus import Api,Resource,fields
+import redis
+
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 tododb = myclient['dbtodo']
@@ -35,6 +37,9 @@ model = api.model('todo',
                   )
 
 
+redisClient = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+
 
 # @api.model(fields={'created': fields.String, 'title': fields.String,
 #                    'scheduled': fields.String,'completed': fields.String,
@@ -53,12 +58,13 @@ class todo(Resource):
     def post(self):
         # if request.method == 'POST':
         data = json.loads(request.data.decode('utf-8'))
-        print(data)
+        # print(data)
         output, status_code = todo_handler.create_todo(data)
         if status_code == 200:
             response = str(json.dumps({"success": "true", "status": status_code, "message": output}))
             logging.basicConfig(filename='example.log', level=logging.DEBUG)
             logging.info("%(asctime)s %s post info %s")
+            redisClient.delete("redisdict","all")
             return Response(status=200, response=response)
 
         else:
@@ -81,18 +87,25 @@ class todo(Resource):
     def get(self):
             # if request.method == 'GET':
             data = None
-            output, status_code = todo_handler.get_todo(data)
-            if status_code == 200:
-                response = json.dumps({"success": "true", "status": status_code, "message": output})
-                logging.basicConfig(filename='example.log', level=logging.DEBUG)
-                logging.info("get info")
-                return Response(status=200, response=response)
-
+            if (redisClient.hexists("redisdict", "all")):
+                print(redisClient.hget("redisdict", "all"))
+                print("1")
             else:
-                response = json.dumps({"success": "false", "status": status_code, "message": output})
-                logging.basicConfig(filename='example.log', level=logging.DEBUG)
-                logging.info("get error")
-                return Response(status=400, response=response)
+                output, status_code = todo_handler.get_todo(data)
+                redisClient.hset("redisdict", "all", output)
+                print(redisClient.hget("redisdict", "all"))
+                if status_code == 200:
+                    response = json.dumps({"success": "true", "status": status_code, "message": output})
+                    logging.basicConfig(filename='example.log', level=logging.DEBUG)
+                    logging.info("get info")
+                    return Response(status=200, response=response)
+
+                else:
+                    response = json.dumps({"success": "false", "status": status_code, "message": output})
+                    logging.basicConfig(filename='example.log', level=logging.DEBUG)
+                    logging.info("get error")
+                    return Response(status=400, response=response)
+
 
 
 
@@ -131,18 +144,41 @@ class todo_one(Resource):
     def get(self,id):
         # if request.method=='GET':
         data = {"id": id}
-        output, status_code = todo_handler.get_todo(data)
-        if status_code == 200:
-            response = json.dumps({"success": "true", "status": status_code, "message": output})
-            logging.basicConfig(filename='example.log', level=logging.DEBUG)
-            logging.info("getone info %s")
-            return Response(status=200, response=response)
 
+        if (redisClient.hexists("redisdict", str(ObjectId(id)))):
+            print(redisClient.hget("redisdict", str(ObjectId(id))))
+            print("1")
         else:
-            response = json.dumps({"success": "false", "status": status_code, "message": output})
-            logging.basicConfig(filename='example.log', level=logging.DEBUG)
-            logging.info("getone error")
-            return Response(status=400, response=response)
+            output, status_code = todo_handler.get_todo(data)
+            redisClient.hset("redisdict", str(ObjectId(id)), output)
+            print(redisClient.hget("redisdict", str(ObjectId(id))))
+
+            if status_code == 200:
+                response = json.dumps({"success": "true", "status": status_code, "message": output})
+                logging.basicConfig(filename='example.log', level=logging.DEBUG)
+                logging.info("getone info %s")
+                return Response(status=200, response=response)
+
+            else:
+                response = json.dumps({"success": "false", "status": status_code, "message": output})
+                logging.basicConfig(filename='example.log', level=logging.DEBUG)
+                logging.info("getone error")
+                return Response(status=400, response=response)
+    # def get(self,id):
+    #     # if request.method=='GET':
+    #     data = {"id": id}
+    #     output, status_code = todo_handler.get_todo(data)
+    #     if status_code == 200:
+    #         response = json.dumps({"success": "true", "status": status_code, "message": output})
+    #         logging.basicConfig(filename='example.log', level=logging.DEBUG)
+    #         logging.info("getone info %s")
+    #         return Response(status=200, response=response)
+    #
+    #     else:
+    #         response = json.dumps({"success": "false", "status": status_code, "message": output})
+    #         logging.basicConfig(filename='example.log', level=logging.DEBUG)
+    #         logging.info("getone error")
+    #         return Response(status=400, response=response)
 
             # id=input("enter id")
             # for i in todocol.find({"_id": ObjectId(id)}):
@@ -204,6 +240,9 @@ class todo_one(Resource):
             response = json.dumps({"success": "false", "status": 400, "message": "Data Not Updated, Id not present"})
             return Response(status=400, response=response)
 
+# @ns_conf.route("/register")
+# class todo_one(Resource):
+#     def post(self):
 
 # @ns_conf.route("/report")
 # # @app.route("/todoreport",methods = ["POST","GET","DELETE","PUT"])
