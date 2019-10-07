@@ -31,9 +31,9 @@ class MongoHandler:
             for document in cursor:
                 document['_id'] = str(document['_id'])
                 taskList.append(document)
-            taskJson = json.dumps(taskList)
+            # taskJson = json.dumps(taskList)
             # print(taskJson)
-            return taskJson
+            return taskList
         except Exception as err:
             raise err
 

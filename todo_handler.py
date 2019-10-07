@@ -35,25 +35,24 @@ class TodoHandler:
         except Exception as err:
             return "data not inserted", 400
 
-    def get_todo(self,data):
+    def get_todo(self, data):
         try:
-            if data==None:
-                query={}
+            if data == None:
+                query = {}
             else:
-                query = {"_id":ObjectId(data["id"])}
+                query = {"_id": ObjectId(data["id"])}
 
             outputData = mongo_handler.get_document(query)
-            # print(outputData)
             return outputData, 200
         except Exception as err:
             return "data not displayed", 400
 
     def delete_todo(self, data):
         try:
-            if data==None:
+            if data == None:
                 query = {}
             else:
-                query = {"_id":ObjectId(data["id"])}
+                query = {"_id": ObjectId(data["id"])}
 
             mongo_handler.delete_document(query)
             return "deleted", 200

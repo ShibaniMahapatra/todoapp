@@ -11,7 +11,7 @@ from datetime import date
 from collections import defaultdict
 from todo_handler import TodoHandler
 from bson import ObjectId
-from flask_restplus import Api,Resource,fields
+from flask_restplus import Api, Resource, fields
 import redis
 from flask_cors import CORS
 import ast
@@ -31,17 +31,15 @@ api = Api(app=app)
 ns_conf = api.namespace('todo', description='todo operations')
 
 model = api.model('todo',
-		{'created': fields.String(required = True,description="Name of the person"),
-        'title': fields.String(required = True,description="title of the person"),
-        'scheduled': fields.String(required = True,description="sch of the person"),
-        'completed': fields.String(required = True,description="comp of the person"),
-        'description': fields.String(required = True,description="desc of the person"),
-        'lastupdated': fields.String(required = True,description="lastupdate of the person")}
+                  {'created': fields.String(required=True, description="Name of the person"),
+                   'title': fields.String(required=True, description="title of the person"),
+                   'scheduled': fields.String(required=True, description="sch of the person"),
+                   'completed': fields.String(required=True, description="comp of the person"),
+                   'description': fields.String(required=True, description="desc of the person"),
+                   'lastupdated': fields.String(required=True, description="lastupdate of the person")}
                   )
 
-
-redisClient = redis.StrictRedis(host='localhost', port=6379, db=0,charset="utf-8", decode_responses=True)
-
+redisClient = redis.StrictRedis(host='localhost', port=6379, db=0, charset="utf-8", decode_responses=True)
 
 
 # @api.model(fields={'created': fields.String, 'title': fields.String,
@@ -70,7 +68,7 @@ class todo(Resource):
                                 filename='example.log', level=logging.DEBUG,
                                 datefmt='%Y-%m-%d %H:%M:%S')
             logging.info("post info %s")
-            redisClient.delete("redisdict","all")
+            redisClient.delete("redisdict", "all")
             return Response(status=200, response=response)
 
         else:
@@ -93,50 +91,47 @@ class todo(Resource):
             # response = json.dumps({"success": "true", "status": 200, "result": "insertedResult"})
             # # print(type(response))
             # return response
+
     def get(self):
-            # if request.method == 'GET':
-            data = None
-            if (redisClient.hexists("redisdict", "all")):
+        # if request.method == 'GET':
+        data = None
+        if (redisClient.hexists("redisdict", "all")):
 
-                todos=ast.literal_eval(json.loads(redisClient.hget("redisdict", "all")))
-                print(todos)
+            todos = json.loads(redisClient.hget("redisdict", "all"))
 
-                response = {"success": "true", "status": 200,"data" :todos}
-                logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                                    filename='example.log', level=logging.DEBUG,
-                                    datefmt='%Y-%m-%d %H:%M:%S')
-                logging.info("get info " )
-                print(response)
-                return Response(response=response,status=200)
-            else:
-                output, status_code = todo_handler.get_todo(data)
-                print(output)
+            data = {"success": "true", "status": 200, "data": todos}
+            logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                                filename='example.log', level=logging.DEBUG,
+                                datefmt='%Y-%m-%d %H:%M:%S')
+            logging.info("get info ")
+            return Response(response=json.dumps(data), status=200)
+        else:
+            output, status_code = todo_handler.get_todo(data)
+            if status_code == 200:
+                data = {"success": "true", "status": status_code, "data": output}
                 redisClient.hset("redisdict", "all", json.dumps(output))
-                print(redisClient.hget("redisdict", "all"))
-                if status_code == 200:
-                    response = json.dumps({"success": "true", "status": status_code, "message": output})
-                    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                                        filename='example.log', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
+                logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                                    filename='example.log', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
 
-                    logging.info("get info")
-                    return Response(status=200, response=response)
+                logging.info("get info")
+                return Response(status=200, response=json.dumps(data))
 
-                else:
-                    response = json.dumps({"success": "false", "status": status_code, "message": output})
-                    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                                        filename='example.log', level=logging.DEBUG)
-                    logging.error("get error")
-                    return Response(status=400, response=response)
+            else:
+                data = json.dumps({"success": "false", "status": status_code, "data": output})
+                logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                                    filename='example.log', level=logging.DEBUG)
+                logging.error("get error")
+                return Response(status=400, response=json.dumps(data))
 
+        # cursor = todocol.find({})
+        # for document in cursor:
+        #     document['_id'] = str(document['_id'])
+        #     taskList.append(document)
+        # # print(taskList)
+        # todojson = json.dumps(taskList)
+        # # json.encode(todojson, cls=JSONEncoder)
+        # return todojson
 
-            # cursor = todocol.find({})
-            # for document in cursor:
-            #     document['_id'] = str(document['_id'])
-            #     taskList.append(document)
-            # # print(taskList)
-            # todojson = json.dumps(taskList)
-            # # json.encode(todojson, cls=JSONEncoder)
-            # return todojson
     def delete(self):
         # if request.method=='DELETE':
         output, status_code = todo_handler.delete_todo()
@@ -165,25 +160,25 @@ class todo(Resource):
 
 @ns_conf.route("/<string:id>")
 class todo_one(Resource):
-    def get(self,id):
+    def get(self, id):
         # if request.method=='GET':
         data = {"id": id}
         stringid = str(ObjectId(id))
         if (redisClient.hexists("redisdict", str(ObjectId(id)))):
-            print(redisClient.hget("redisdict", str(ObjectId(id))))
+            cache_data = json.loads(redisClient.hget("redisdict", str(ObjectId(id))))
             logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
                                 filename='example.log', level=logging.DEBUG,
                                 datefmt='%Y-%m-%d %H:%M:%S')
-            logging.info("get info of Id % s",  stringid)
-            response = json.dumps({"success": "true", "status": 200})
+            logging.info("get info of Id % s", stringid)
+            response = json.dumps({"success": "true", "status": 200, "data": cache_data})
             return Response(status=200, response=response)
         else:
             output, status_code = todo_handler.get_todo(data)
-            redisClient.hset("redisdict", str(ObjectId(id)), output)
+            redisClient.hset("redisdict", str(ObjectId(id)), json.dumps(output))
             print(redisClient.hget("redisdict", str(ObjectId(id))))
 
             if status_code == 200:
-                response = json.dumps({"success": "true", "status": status_code, "message": output})
+                response = json.dumps({"success": "true", "status": status_code, "data": output})
                 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
                                     filename='example.log', level=logging.DEBUG,
                                     datefmt='%Y-%m-%d %H:%M:%S')
@@ -197,6 +192,7 @@ class todo_one(Resource):
                                     datefmt='%Y-%m-%d %H:%M:%S')
                 logging.error("getone error")
                 return Response(status=400, response=response)
+
     # def get(self,id):
     #     # if request.method=='GET':
     #     data = {"id": id}
@@ -213,11 +209,11 @@ class todo_one(Resource):
     #         logging.info("getone error")
     #         return Response(status=400, response=response)
 
-            # id=input("enter id")
-            # for i in todocol.find({"_id": ObjectId(id)}):
-            #     print(i)
-            # return "YES"
-            # print(output)
+    # id=input("enter id")
+    # for i in todocol.find({"_id": ObjectId(id)}):
+    #     print(i)
+    # return "YES"
+    # print(output)
 
     def delete(self, id):
         # if request.method=='DELETE':
@@ -229,7 +225,7 @@ class todo_one(Resource):
             logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
                                 filename='example.log', level=logging.DEBUG,
                                 datefmt='%Y-%m-%d %H:%M:%S')
-            logging.info("delete info of Id % s",  stringid)
+            logging.info("delete info of Id % s", stringid)
             return Response(status=200, response=response)
 
         else:
@@ -250,11 +246,11 @@ class todo_one(Resource):
 
     @api.doc(responses={200: 'OK', 400: 'Invalid Argument'})
     @api.expect(model)
-    def put(self,id):
+    def put(self, id):
         # if request.method =='PUT':
         data = json.loads(request.data.decode('utf-8'))
         print(data)
-        stringid=str(ObjectId(id))
+        stringid = str(ObjectId(id))
         flag = 0
         collection = todocol
         cursor = collection.find({})
@@ -264,7 +260,7 @@ class todo_one(Resource):
                 print("yes")
                 flag = 1
                 todocol.update({'_id': ObjectId(id)}, {"$set": {"created": data["created"],
-                                                                    "title": data["title"],
+                                                                "title": data["title"],
                                                                 "scheduled": data["scheduled"],
                                                                 "completed": data["completed"],
                                                                 "description": data["description"],
@@ -280,6 +276,7 @@ class todo_one(Resource):
         if flag == 0:
             response = json.dumps({"success": "false", "status": 400, "message": "Data Not Updated, Id not present"})
             return Response(status=400, response=response)
+
 
 @ns_conf.route("/register")
 class todo_one(Resource):
@@ -330,4 +327,3 @@ class todo_one(Resource):
 
 if __name__ == "__main__":
     app.run(debug=False)
-
