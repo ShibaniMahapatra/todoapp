@@ -8,8 +8,16 @@ class MongoHandler:
         self.myclient = pymongo.MongoClient('mongodb://localhost:27017/')
         self.tododb = self.myclient['dbtodo']
         self.todocol = self.tododb['todotable']
+        self.registercol=self.tododb['registertable']
 
-    def insert_document(self, collection, document):
+    def insert_register_document(self, collection, document):
+        try:
+            # self.myclient[self.tododb][collection].insert(document)
+            self.registercol.insert(document)
+        except Exception as err:
+            raise err
+
+    def insert_col_document(self, collection, document):
         try:
             # self.myclient[self.tododb][collection].insert(document)
             self.todocol.insert(document)

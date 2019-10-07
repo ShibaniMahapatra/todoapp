@@ -13,13 +13,15 @@ from todo_handler import TodoHandler
 from bson import ObjectId
 from flask_restplus import Api,Resource,fields
 import redis
-
+from flask_cors import CORS
+import ast
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 tododb = myclient['dbtodo']
 todocol = tododb['todotable']
 registercol = tododb["registertable"]
 app = Flask(__name__)
+cors = CORS(app)
 
 # dict1={}
 dictReport = defaultdict(list)
@@ -38,7 +40,7 @@ model = api.model('todo',
                   )
 
 
-redisClient = redis.StrictRedis(host='localhost', port=6379, db=0)
+redisClient = redis.StrictRedis(host='localhost', port=6379, db=0,charset="utf-8", decode_responses=True)
 
 
 
@@ -95,18 +97,21 @@ class todo(Resource):
             # if request.method == 'GET':
             data = None
             if (redisClient.hexists("redisdict", "all")):
-                print(redisClient.hget("redisdict", "all"))
-                print(1)
-                response = json.dumps({"success": "true", "status": 200})
+
+                todos=ast.literal_eval(json.loads(redisClient.hget("redisdict", "all")))
+                print(todos)
+
+                response = {"success": "true", "status": 200,"data" :todos}
                 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
                                     filename='example.log', level=logging.DEBUG,
                                     datefmt='%Y-%m-%d %H:%M:%S')
                 logging.info("get info " )
-                return Response(status=200,response=response)
+                print(response)
+                return Response(response=response,status=200)
             else:
                 output, status_code = todo_handler.get_todo(data)
-
-                redisClient.hset("redisdict", "all", output)
+                print(output)
+                redisClient.hset("redisdict", "all", json.dumps(output))
                 print(redisClient.hget("redisdict", "all"))
                 if status_code == 200:
                     response = json.dumps({"success": "true", "status": status_code, "message": output})
