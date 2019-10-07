@@ -4,29 +4,35 @@ from flask import Flask
 from flask import request
 import shutil
 import requests
+from flask_restplus import Api,Resource
 
 
 app = Flask(__name__)
-
 url='http://www.youtube.com/watch?v=BaW_jenozKc'
-@app.route("/youtube",methods = ["POST","GET","DELETE","PUT"])
-def youtube():
+
+api = Api(app=app)
+ns_conf = api.namespace('youtube', description='youtube operations')
+
+@ns_conf.route("/")
+class youtube():
+# @app.route("/youtube",methods = ["POST","GET","DELETE","PUT"])
+    def youtube(self):
     # url = request.form.get("urlDownload")
 
 
-    with youtube_dl.YoutubeDL({}) as ydl:
-        # source = os.getcwd()
-        # destination = '/home/shibani/Downloads/rough'
-        # os.rename(source, destination)
-        # p= ydl.download([url])
-        # print(p)
-        r = requests.get(url)
-        print(r)
-        # with open('/home/shibani/Downloads/rough', 'wb') as f:
-        #     ydl.download([url])
-        #     f.write(r.content)
+        with youtube_dl.YoutubeDL({}) as ydl:
+            # source = os.getcwd()
+            # destination = '/home/shibani/Downloads/rough'
+            # os.rename(source, destination)
+            # p= ydl.download([url])
+            # print(p)
+            r = requests.get(url)
+            print(r)
+            # with open('/home/shibani/Downloads/rough', 'wb') as f:
+            #     ydl.download([url])
+            #     f.write(r.content)
 
-    return "youtubeDone"
+        return "youtubeDone"
 
 # cwd = os.getcwd()
 # print(cwd)
